@@ -23,10 +23,20 @@ public class Program
             Console.WriteLine("accepting tcp client");
             TcpClient client = _listener.AcceptTcpClient();
             Console.WriteLine("connected to client: " + client.Client.SocketType);
-            while(client.Connected)
-            {
-                Process(client);
-            }
+            Task.Run(()=>{
+                
+                try {
+                    while(client.Connected)
+                    {
+                        Process(client);
+                    }
+                } catch (Exception e)
+                {
+                    Console.WriteLine("Error process clien: " + e.Message );
+                }
+                
+                Console.WriteLine("Client closed");
+            });
         }
     }
 
@@ -35,8 +45,10 @@ public class Program
         bool readData = false;
         int dataLength = 0;
         string data = "";
-        while(true)
+        _client.GetStream().ReadTimeout = -1;
+        while(_client.Connected)
         {
+            Console.WriteLine("Will read");
             if (!readData)
             {
                 byte[] dataLengthBytes = new byte[DATA_SIZE_LENGTH];
@@ -54,6 +66,8 @@ public class Program
                 readData = false;
 
                 ProcessRequest(_client, data);
+                Console.WriteLine("request has been proceeded");
+                return;
             }
         }
     }

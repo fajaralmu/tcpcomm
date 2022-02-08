@@ -13,8 +13,9 @@ public class Program
     {
        
         _client = new TcpClient();
-        Task.Run(Run);
-         
+        Run();
+        _client.GetStream().Close();
+        _client.Close();
         Console.WriteLine("Press enter to exit...");
         Console.ReadLine();
     }
@@ -25,7 +26,17 @@ public class Program
         _client.Connect(System.Net.IPAddress.Loopback, 8081);
         Console.WriteLine("connected");
         Task.Run(Receive);
-        Send("Hello");
+        string msg = "";
+        while(msg != "\\q")
+        {
+            Console.WriteLine("Enter message or \\q to exit ");
+            msg = Console.ReadLine();
+            if (msg == "\\q")
+            {
+                break;
+            }
+            Send(msg);
+        }
         }
         catch (Exception e)
         {
@@ -44,7 +55,7 @@ public class Program
             {
                 byte[] dataLengthBytes = new byte[DATA_SIZE_LENGTH];
                 _client.GetStream().Read(dataLengthBytes, 0, dataLengthBytes.Length);
-                dataLength = BitConverter.ToInt32(dataLengthBytes);
+                dataLength = Convert.ToInt32( BitConverter.ToUInt32(dataLengthBytes, 0) );
                 Console.WriteLine($"Read data length: " +dataLength);
                 readData = true;
             }
@@ -61,6 +72,10 @@ public class Program
 
     static void Send(string payload)
     {
+        if (string.IsNullOrEmpty(payload))
+        {
+            return;
+        }
         Console.WriteLine("Send: " + payload);
         byte[] bytes = GetBytes( payload );
         Console.WriteLine($"Send bytes {string.Join(",", bytes)}");
